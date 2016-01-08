@@ -1,0 +1,30 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "azureuser"
+    },
+    "authenticationType": {
+      "value": "password"
+    },
+    "adminPassword": {
+      "value": "Pass123!"
+    },
+    "storageAccountNewOrExisting": {
+      "value": "new"
+    },
+    "storageAccountName": {
+      "value": "testps0701"
+    },
+    "storageAccountType": {
+      "value": "Standard_LRS"
+    },
+    "dnsNameForPublicIP": {
+      "value": "testps0701"
+    },
+    "location": {
+      "value": "northeurope"
+    }
+  }
+}

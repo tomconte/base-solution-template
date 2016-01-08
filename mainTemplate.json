@@ -1,0 +1,365 @@
+{
+  "$schema": "https://schema.management.azure.com/schemas/2015-01-01/deploymentTemplate.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "templateBaseUrl": { 
+      "type": "string",
+      "metadata": {
+        "description": "Base URL for Marketplace", 
+        "artifactsBaseUrl": "" 
+      },
+      "defaultValue": "https://raw.githubusercontent.com/tomconte/base-solution-template/master" 
+    },
+    "location": {
+      "type": "string",
+      "metadata": {
+        "description": "The location where the solution will be deployed."
+      }
+    },
+    "storageAccountNewOrExisting": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique DNS Name for the Storage Account where the Virtual Machine's disks will be placed."
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS",
+        "Premium_LRS"
+      ]
+    },
+    "authenticationType": {
+      "type": "string",
+      "allowedValues": [
+        "password",
+        "sshPublicKey"
+      ]
+    },
+    "adminUsername": {
+      "type": "string",
+      "metadata": {
+        "description": "User name for the Virtual Machine."
+      }
+    },
+    "adminPassword": {
+      "type": "securestring",
+      "defaultValue": "", 
+      "metadata": {
+        "description": "Password for the Virtual Machine. Not used if authenticationType of sshPublicKey."
+      }
+    },
+    "sshPublicKey": {
+      "type": "string",
+      "defaultValue": "", 
+      "metadata": {
+        "description": "SSH RSA public key file as a string. Not used if authenticationType of password."
+      }
+    },
+    "dnsNameForPublicIP": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique DNS Name for the Public IP used to access the Web Front-End."
+      }
+    }
+  },
+  "variables": {
+    "ubuntu_image_publisher": "Canonical",
+    "ubuntu_image_offer": "UbuntuServer",
+    "ubuntu_image_sku": "14.04.3-LTS",
+    "vnet_addr_prefix": "10.0.0.0/16",
+    "front_subnet_name": "Subnet-1",
+    "front_subnet_prefix": "10.0.0.0/24",
+    "sql_subnet_name": "Subnet-2",
+    "sql_subnet_prefix": "10.0.1.0/24",
+    "sql_private_ip": "10.0.1.4",
+    "publicIPAddressName": "myPublicIP",
+    "publicIPAddressType": "Dynamic",
+    "vmStorageAccountContainerName": "vhds",
+    "virtualNetworkName": "vnet-solution",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
+    "front_subnet_ref": "[concat(variables('vnetID'),'/subnets/',variables('front_subnet_name'))]",
+    "sql_subnet_ref": "[concat(variables('vnetID'),'/subnets/',variables('sql_subnet_name'))]",
+    "front_osdisk_name": "front-osdisk",
+    "front_nic_name": "front-nic",
+    "front_vm_name": "front-vm",
+    "sql_osdisk_name": "back-osdisk",
+    "sql_nic_name": "back-nic",
+    "sql_vm_name": "back-vm",
+    "fqdn": "[concat(parameters('dnsNameForPublicIP'),'.',parameters('location'),'.cloudapp.azure.com')]",
+    "storageTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('storageAccountNewOrExisting'), 'StorageAccount.json')]",
+    "osProfile_front_password": {
+      "computerName": "[variables('front_vm_name')]",
+      "adminUsername": "[parameters('adminUsername')]",
+      "adminPassword": "[parameters('adminPassword')]"
+    },
+    "osProfile_front_sshPublicKey": {
+      "computerName": "[variables('front_vm_name')]",
+      "adminUsername": "[parameters('adminUsername')]",
+      "linuxConfiguration": {
+        "disablePasswordAuthentication": "true",
+        "ssh": {
+          "publicKeys": [
+            {
+              "path": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+              "keyData": "[parameters('sshPublicKey')]"
+            }
+          ]
+        }
+      }
+    },
+    "osProfile_sql_password": {
+      "computerName": "[variables('sql_vm_name')]",
+      "adminUsername": "[parameters('adminUsername')]",
+      "adminPassword": "[parameters('adminPassword')]"
+    },
+    "osProfile_sql_sshPublicKey": {
+      "computerName": "[variables('sql_vm_name')]",
+      "adminUsername": "[parameters('adminUsername')]",
+      "linuxConfiguration": {
+        "disablePasswordAuthentication": "true",
+        "ssh": {
+          "publicKeys": [
+            {
+              "path": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+              "keyData": "[parameters('sshPublicKey')]"
+            }
+          ]
+        }
+      }
+    }
+  },
+  "resources": [
+    {
+      "apiVersion": "2015-01-01",
+      "name": "storageTemplate",
+      "type": "Microsoft.Resources/deployments",
+      "properties": {
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('storageTemplateLink')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "storageAccountName": {
+            "value": "[parameters('storageAccountName')]"
+          },
+          "storageAccountType": {
+            "value" : "[parameters('storageAccountType')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
+          }
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/publicIPAddresses",
+      "name": "[variables('publicIPAddressName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
+        "dnsSettings": {
+          "domainNameLabel": "[parameters('dnsNameForPublicIP')]"
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/virtualNetworks",
+      "name": "[variables('virtualNetworkName')]",
+      "location": "[parameters('location')]",
+      "properties": {
+        "addressSpace": {
+          "addressPrefixes": [
+            "[variables('vnet_addr_prefix')]"
+          ]
+        },
+        "subnets": [
+          {
+            "name": "[variables('front_subnet_name')]",
+            "properties": {
+              "addressPrefix": "[variables('front_subnet_prefix')]"
+            }
+          },
+          {
+            "name": "[variables('sql_subnet_name')]",
+            "properties": {
+              "addressPrefix": "[variables('sql_subnet_prefix')]"
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('front_nic_name')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig1",
+            "properties": {
+              "privateIPAllocationMethod": "Dynamic",
+              "publicIPAddress": {
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+              },
+              "subnet": {
+                "id": "[variables('front_subnet_ref')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Network/networkInterfaces",
+      "name": "[variables('sql_nic_name')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+      ],
+      "properties": {
+        "ipConfigurations": [
+          {
+            "name": "ipconfig2",
+            "properties": {
+              "privateIPAllocationMethod": "Static",
+              "privateIPAddress": "[variables('sql_private_ip')]",
+              "subnet": {
+                "id": "[variables('sql_subnet_ref')]"
+              }
+            }
+          }
+        ]
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('front_vm_name')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "Microsoft.Resources/deployments/storageTemplate",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('front_nic_name'))]"
+      ],
+      "plan": {
+        "publisher": "[variables('ubuntu_image_publisher')]",
+        "product": "[variables('ubuntu_image_offer')]",
+        "name": "[variables('ubuntu_image_sku')]"
+      },
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('clusterSpec').front_vm_size]"
+        },
+        "osProfile": "[variables(concat('osProfile_front_', parameters('authenticationType')))]",
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('ps_image_publisher')]",
+            "offer": "[variables('ps_image_offer')]",
+            "sku": "[variables('ps_image_sku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('front_osdisk_name'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          }
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('front_nic_name'))]"
+            }
+          ]
+        }
+      }
+    },
+    {
+      "apiVersion": "2015-06-15",
+      "type": "Microsoft.Compute/virtualMachines",
+      "name": "[variables('sql_vm_name')]",
+      "location": "[parameters('location')]",
+      "dependsOn": [
+        "Microsoft.Resources/deployments/storageTemplate",
+        "[concat('Microsoft.Network/networkInterfaces/', variables('sql_nic_name'))]"
+      ],
+      "properties": {
+        "hardwareProfile": {
+          "vmSize": "[variables('clusterSpec').sql_vm_size]"
+        },
+        "osProfile": "[variables(concat('osProfile_sql_', parameters('authenticationType')))]",
+        "storageProfile": {
+          "imageReference": {
+            "publisher": "[variables('ubuntu_image_publisher')]",
+            "offer": "[variables('ubuntu_image_offer')]",
+            "sku": "[variables('ubuntu_image_sku')]",
+            "version": "latest"
+          },
+          "osDisk": {
+            "name": "osdisk",
+            "vhd": {
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('sql_osdisk_name'),'.vhd')]"
+            },
+            "caching": "ReadWrite",
+            "createOption": "FromImage"
+          },
+          "dataDisks": [
+            {
+              "name": "datadisk0",
+              "diskSizeGB": "[variables('clusterSpec').data_disk_size]",
+              "lun": 0,
+              "caching": "None",
+              "createOption": "Empty",
+              "vhd": {
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('sql_vm_name'), '-dataDisk0', '.vhd')]"
+              }
+            },
+            {
+              "name": "datadisk1",
+              "diskSizeGB": "[variables('clusterSpec').data_disk_size]",
+              "lun": 1,
+              "caching": "None",
+              "createOption": "Empty",
+              "vhd": {
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('sql_vm_name'), '-dataDisk1', '.vhd')]"
+              }
+            }
+          ]
+        },
+        "networkProfile": {
+          "networkInterfaces": [
+            {
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('sql_nic_name'))]"
+            }
+          ]
+        }
+      }
+    }
+  ],
+  "outputs": {
+    "fullyQualifiedDomainName": {
+      "value": "[variables('fqdn')]",
+      "type": "string" 
+    }
+  }
+}

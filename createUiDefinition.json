@@ -1,0 +1,170 @@
+{
+  "handler": "Microsoft.Compute.MultiVm",
+  "version": "0.0.1-preview",
+  "parameters": {
+    "basics": [
+      {
+        "name": "adminUsername",
+        "type": "Microsoft.Compute.UserNameTextBox",
+        "label": "VM username",
+        "toolTip": "Administrative username for the virtual machines.",
+        "osPlatform": "Linux",
+        "constraints": {
+          "required": true
+        }
+      },
+      {
+        "name": "adminCredentials",
+        "type": "Microsoft.Compute.CredentialsCombo",
+        "label": {
+          "authenticationType": "Authentication type",
+          "password": "Password",
+          "confirmPassword": "Confirm password",
+          "sshPublicKey": "SSH public key"
+        },
+        "constraints": {
+          "required": true
+        },
+        "options": {
+          "hideConfirmation": false
+        },
+        "osPlatform": "Linux"
+      }
+    ],
+    "steps": [
+      {
+        "name": "deploymentDetails",
+        "label": "Deployment Details",
+        "subLabel": {
+          "preValidation": "Required",
+          "postValidation": "Done"
+        },
+        "bladeTitle": "Deployment Details",
+        "elements": [
+          {
+            "name": "publicIP",
+            "type": "Microsoft.Network.PublicIpAddressCombo",
+            "label": {
+              "publicIpAddress": "Public IP address",
+              "domainNameLabel": "Domain Name prefix"
+            },
+            "defaultValue": {
+              "publicIpAddressName": "my-pub-ip"
+            },
+            "options": {
+              "hideNone": true
+            }
+          },
+          {
+            "name": "vnet",
+            "type": "Microsoft.Network.VirtualNetworkCombo",
+            "label": {
+              "virtualNetwork": "Virtual Network",
+              "subnets": "Subnets"
+            },
+            "defaultValue": {
+              "name": "my-vnet",
+              "addressPrefixSize": "/16"
+            },
+            "constraints": {
+              "minAddressPrefixSize": "/16"
+            },
+            "subnets": {
+              "subnet1": {
+                "label": "First subnet",
+                "defaultValue": {
+                  "name": "subnet-1",
+                  "addressPrefixSize": "/24"
+                },
+                "constraints": {
+                  "minAddressPrefixSize": "/24"
+                }
+              },
+              "subnet2": {
+                "label": "Second subnet",
+                "defaultValue": {
+                  "name": "subnet-2",
+                  "addressPrefixSize": "/24"
+                },
+                "constraints": {
+                  "minAddressPrefixSize": "/24"
+                }
+              }
+            }
+          },
+          {
+            "name": "storageAccount",
+            "type": "Microsoft.Storage.StorageAccountSelector",
+            "label": "Storage account",
+            "toolTip": "Storage account where the VM disks will be stored.",
+            "defaultValue": {
+              "type": "Standard_LRS"
+            },
+            "constraints": {
+              "required": true,
+              "excludedTypes": [
+                "Premium_LRS"
+              ]
+            }
+          },
+          {
+            "name": "frontVMSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "Front VM size",
+            "toolTip": "The size of virtual machine for front-end VM.",
+            "recommendedSizes": [
+              "Standard_A1",
+              "Standard_D1",
+              "Standard_D4"
+            ],
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "Canonical",
+              "offer": "UbuntuServer",
+              "sku": "14.04.2-LTS"
+            }
+          },
+          {
+            "name": "backVMSize",
+            "type": "Microsoft.Compute.SizeSelector",
+            "label": "Back VM size",
+            "toolTip": "The size of virtual machine for back-end VM.",
+            "recommendedSizes": [
+              "Standard_A1",
+              "Standard_D1",
+              "Standard_D4"
+            ],
+            "osPlatform": "Linux",
+            "imageReference": {
+              "publisher": "Canonical",
+              "offer": "UbuntuServer",
+              "sku": "14.04.2-LTS"
+            }
+          }
+        ]
+      }
+    ],
+    "outputs": {
+      "adminUsername": "[basics('section1').adminUsername]",
+      "authenticationType": "[basics('section1').adminCredentials.authenticationType]",
+      "adminPassword": "[basics('section1').adminCredentials.password]",
+      "sshPublicKey": "[basics('section1').adminCredentials.sshPublicKey]",
+      "publicIPNewOrExisting": "[steps('deploymentDetails').publicIP.newOrExisting]",
+      "publicIPName": "[steps('deploymentDetails').publicIP.name]",
+      "dnsNameForPublicIP": "[steps('deploymentDetails').publicIP.domainNameLabel]",
+      "vnetNewOrExisting": "[steps('deploymentDetails').vnet.newOrExisting]",
+      "vnetName": "[steps('deploymentDetails').vnet.name]",
+      "vnetPrefix": "[steps('deploymentDetails').vnet.addressPrefix]",
+      "vnetSubnet1Name": "[steps('deploymentDetails').vnet.subnet1.name]",
+      "vnetSubnet1Prefix": "[steps('deploymentDetails').vnet.subnet1.addressPrefix]",
+      "vnetSubnet2Name": "[steps('deploymentDetails').vnet.subnet2.name]",
+      "vnetSubnet2Prefix": "[steps('deploymentDetails').vnet.subnet2.addressPrefix]",
+      "storageAccountNewOrExisting": "[steps('deploymentDetails').storageAccount.newOrExisting]",
+      "storageAccountName": "[steps('deploymentDetails').storageAccount.name]",
+      "storageAccountType": "[steps('deploymentDetails').storageAccount.type]",
+      "frontVMSize": "[steps('deploymentDetails').frontVMSize]",
+      "backVMSize": "[steps('deploymentDetails').backVMSize]",
+      "location": "[location()]"
+    }
+  }
+}
