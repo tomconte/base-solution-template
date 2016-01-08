@@ -145,10 +145,10 @@
       }
     ],
     "outputs": {
-      "adminUsername": "[basics('section1').adminUsername]",
-      "authenticationType": "[basics('section1').adminCredentials.authenticationType]",
-      "adminPassword": "[basics('section1').adminCredentials.password]",
-      "sshPublicKey": "[basics('section1').adminCredentials.sshPublicKey]",
+      "adminUsername": "[basics('adminUsername')]",
+      "authenticationType": "[basics('adminCredentials').authenticationType]",
+      "adminPassword": "[basics('adminCredentials').password]",
+      "sshPublicKey": "[basics('adminCredentials').sshPublicKey]",
       "publicIPNewOrExisting": "[steps('deploymentDetails').publicIP.newOrExisting]",
       "publicIPName": "[steps('deploymentDetails').publicIP.name]",
       "dnsNameForPublicIP": "[steps('deploymentDetails').publicIP.domainNameLabel]",
