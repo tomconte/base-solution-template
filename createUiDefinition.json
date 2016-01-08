@@ -149,7 +149,7 @@
       "authenticationType": "[basics('adminCredentials').authenticationType]",
       "adminPassword": "[basics('adminCredentials').password]",
       "sshPublicKey": "[basics('adminCredentials').sshPublicKey]",
-      "publicIPNewOrExisting": "[steps('deploymentDetails').publicIP.newOrExisting]",
+      "publicIPNewOrExisting": "[steps('deploymentDetails').publicIP.newOrExistingOrNone]",
       "publicIPName": "[steps('deploymentDetails').publicIP.name]",
       "dnsNameForPublicIP": "[steps('deploymentDetails').publicIP.domainNameLabel]",
       "vnetNewOrExisting": "[steps('deploymentDetails').vnet.newOrExisting]",
