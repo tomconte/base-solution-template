@@ -16,28 +16,6 @@
         "description": "The location where the solution will be deployed."
       }
     },
-    "storageAccountNewOrExisting": {
-      "type": "string",
-      "allowedValues": [
-        "new",
-        "existing"
-      ]
-    },
-    "storageAccountName": {
-      "type": "string",
-      "metadata": {
-        "description": "Unique DNS Name for the Storage Account where the Virtual Machine's disks will be placed."
-      }
-    },
-    "storageAccountType": {
-      "type": "string",
-      "allowedValues": [
-        "Standard_LRS",
-        "Standard_GRS",
-        "Standard_ZRS",
-        "Premium_LRS"
-      ]
-    },
     "authenticationType": {
       "type": "string",
       "allowedValues": [
@@ -65,11 +43,74 @@
         "description": "SSH RSA public key file as a string. Not used if authenticationType of password."
       }
     },
+    "publicIPNewOrExisting": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "publicIPName": {
+      "type": "string"
+    },
     "dnsNameForPublicIP": {
       "type": "string",
       "metadata": {
         "description": "Unique DNS Name for the Public IP used to access the Web Front-End."
       }
+    },
+    "vnetNewOrExisting": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "vnetName": {
+      "type": "string"
+    },
+    "vnetPrefix": {
+      "type": "string"
+    },
+    "vnetSubnet1Name": {
+      "type": "string"
+    },
+    "vnetSubnet1Prefix": {
+      "type": "string"
+    },
+    "vnetSubnet2Name": {
+      "type": "string"
+    },
+    "vnetSubnet2Prefix": {
+      "type": "string"
+    },
+    "storageAccountNewOrExisting": {
+      "type": "string",
+      "allowedValues": [
+        "new",
+        "existing"
+      ]
+    },
+    "storageAccountName": {
+      "type": "string",
+      "metadata": {
+        "description": "Unique DNS Name for the Storage Account where the Virtual Machine's disks will be placed."
+      }
+    },
+    "storageAccountType": {
+      "type": "string",
+      "allowedValues": [
+        "Standard_LRS",
+        "Standard_GRS",
+        "Standard_ZRS",
+        "Premium_LRS"
+      ]
+    },
+    "frontVMSize": {
+      "type": "string"
+    },
+    "backVMSize": {
+      "type": "string"
     }
   },
   "variables": {
@@ -92,51 +133,25 @@
     "front_osdisk_name": "front-osdisk",
     "front_nic_name": "front-nic",
     "front_vm_name": "front-vm",
-    "sql_osdisk_name": "back-osdisk",
-    "sql_nic_name": "back-nic",
-    "sql_vm_name": "back-vm",
+    "back_osdisk_name": "back-osdisk",
+    "back_nic_name": "back-nic",
+    "back_vm_name": "back-vm",
     "fqdn": "[concat(parameters('dnsNameForPublicIP'),'.',parameters('location'),'.cloudapp.azure.com')]",
     "storageTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('storageAccountNewOrExisting'), 'StorageAccount.json')]",
-    "osProfile_front_password": {
-      "computerName": "[variables('front_vm_name')]",
-      "adminUsername": "[parameters('adminUsername')]",
-      "adminPassword": "[parameters('adminPassword')]"
-    },
-    "osProfile_front_sshPublicKey": {
-      "computerName": "[variables('front_vm_name')]",
-      "adminUsername": "[parameters('adminUsername')]",
-      "linuxConfiguration": {
-        "disablePasswordAuthentication": "true",
-        "ssh": {
-          "publicKeys": [
-            {
-              "path": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-              "keyData": "[parameters('sshPublicKey')]"
-            }
-          ]
-        }
+    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+    "linuxConfiguration_sshPublicKey": {
+      "disablePasswordAuthentication": "true",
+      "ssh": {
+        "publicKeys": [
+          {
+            "path": "[variables('sshKeyPath')]",
+            "keyData": "[parameters('sshPublicKey')]"
+          }
+        ]
       }
     },
-    "osProfile_sql_password": {
-      "computerName": "[variables('sql_vm_name')]",
-      "adminUsername": "[parameters('adminUsername')]",
-      "adminPassword": "[parameters('adminPassword')]"
-    },
-    "osProfile_sql_sshPublicKey": {
-      "computerName": "[variables('sql_vm_name')]",
-      "adminUsername": "[parameters('adminUsername')]",
-      "linuxConfiguration": {
-        "disablePasswordAuthentication": "true",
-        "ssh": {
-          "publicKeys": [
-            {
-              "path": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
-              "keyData": "[parameters('sshPublicKey')]"
-            }
-          ]
-        }
-      }
-    }
+    "linuxConfiguration_password": {},
+    "linuxConfiguration": "[variables(concat('linuxConfiguration_',parameters('authenticationType')))]"
   },
   "resources": [
     {
@@ -230,7 +245,7 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('sql_nic_name')]",
+      "name": "[variables('back_nic_name')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
@@ -259,21 +274,21 @@
         "Microsoft.Resources/deployments/storageTemplate",
         "[concat('Microsoft.Network/networkInterfaces/', variables('front_nic_name'))]"
       ],
-      "plan": {
-        "publisher": "[variables('ubuntu_image_publisher')]",
-        "product": "[variables('ubuntu_image_offer')]",
-        "name": "[variables('ubuntu_image_sku')]"
-      },
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('clusterSpec').front_vm_size]"
+          "vmSize": "[parameters('frontVMSize')]"
         },
-        "osProfile": "[variables(concat('osProfile_front_', parameters('authenticationType')))]",
+        "osProfile": {
+          "computerName": "[variables('front_vm_name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "linuxConfiguration": "[variables('linuxConfiguration')]"
+        },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[variables('ps_image_publisher')]",
-            "offer": "[variables('ps_image_offer')]",
-            "sku": "[variables('ps_image_sku')]",
+            "publisher": "[variables('ubuntu_image_publisher')]",
+            "offer": "[variables('ubuntu_image_offer')]",
+            "sku": "[variables('ubuntu_image_sku')]",
             "version": "latest"
           },
           "osDisk": {
@@ -297,17 +312,22 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('sql_vm_name')]",
+      "name": "[variables('back_vm_name')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "Microsoft.Resources/deployments/storageTemplate",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('sql_nic_name'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('back_nic_name'))]"
       ],
       "properties": {
         "hardwareProfile": {
-          "vmSize": "[variables('clusterSpec').sql_vm_size]"
+          "vmSize": "[parameters('backVMSize')]"
         },
-        "osProfile": "[variables(concat('osProfile_sql_', parameters('authenticationType')))]",
+        "osProfile": {
+          "computerName": "[variables('back_vm_name')]",
+          "adminUsername": "[parameters('adminUsername')]",
+          "adminPassword": "[parameters('adminPassword')]",
+          "linuxConfiguration": "[variables('linuxConfiguration')]"
+        },
         "storageProfile": {
           "imageReference": {
             "publisher": "[variables('ubuntu_image_publisher')]",
@@ -318,7 +338,7 @@
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('sql_osdisk_name'),'.vhd')]"
+              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('back_osdisk_name'),'.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -326,22 +346,22 @@
           "dataDisks": [
             {
               "name": "datadisk0",
-              "diskSizeGB": "[variables('clusterSpec').data_disk_size]",
+              "diskSizeGB": "512",
               "lun": 0,
               "caching": "None",
               "createOption": "Empty",
               "vhd": {
-                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('sql_vm_name'), '-dataDisk0', '.vhd')]"
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('back_vm_name'), '-dataDisk0', '.vhd')]"
               }
             },
             {
               "name": "datadisk1",
-              "diskSizeGB": "[variables('clusterSpec').data_disk_size]",
+              "diskSizeGB": "512",
               "lun": 1,
               "caching": "None",
               "createOption": "Empty",
               "vhd": {
-                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('sql_vm_name'), '-dataDisk1', '.vhd')]"
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('back_vm_name'), '-dataDisk1', '.vhd')]"
               }
             }
           ]
@@ -349,7 +369,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('sql_nic_name'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('back_nic_name'))]"
             }
           ]
         }

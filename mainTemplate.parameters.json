@@ -11,17 +11,50 @@
     "adminPassword": {
       "value": "Pass123!"
     },
+    "publicIPNewOrExisting": {
+      "value": "new"
+    },
+    "publicIPName": {
+      "value": "my-pub-ip"
+    },
+    "dnsNameForPublicIP": {
+      "value": "base0801"
+    },
+    "vnetNewOrExisting": {
+      "value": "new"
+    },
+    "vnetName": {
+      "value": "my-vnet"
+    },
+    "vnetPrefix": {
+      "value": "10.1.0.0/16"
+    },
+    "vnetSubnet1Name": {
+      "value": "subnet-1"
+    },
+    "vnetSubnet1Prefix": {
+      "value": "10.1.0.0/24"
+    },
+    "vnetSubnet2Name": {
+      "value": "subnet-2"
+    },
+    "vnetSubnet2Prefix": {
+      "value": "10.1.1.0/24"
+    },
     "storageAccountNewOrExisting": {
       "value": "new"
     },
     "storageAccountName": {
-      "value": "testps0701"
+      "value": "base0801"
     },
     "storageAccountType": {
       "value": "Standard_LRS"
     },
-    "dnsNameForPublicIP": {
-      "value": "testps0701"
+    "frontVMSize": {
+      "value": "Standard_A1"
+    },
+    "backVMSize": {
+      "value": "Standard_A1"
     },
     "location": {
       "value": "northeurope"
