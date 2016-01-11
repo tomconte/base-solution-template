@@ -117,7 +117,6 @@
     "imagePublisher": "Canonical",
     "imageOffer": "UbuntuServer",
     "imageSKU": "14.04.3-LTS",
-    "publicIPAddressType": "Dynamic",
     "vmStorageAccountContainerName": "vhds",
     "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
     "subnet1Ref": "[concat(variables('vnetID'),'/subnets/', parameters('vnetSubnet1Name'))]",
@@ -130,6 +129,8 @@
     "backVMName": "back-vm",
     "FQDN": "[concat(parameters('dnsNameForPublicIP'), '.', parameters('location'), '.cloudapp.azure.com')]",
     "storageTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('storageAccountNewOrExisting'), 'StorageAccount.json')]",
+    "vnetTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('vnetNewOrExisting'), 'VirtualNetwork.json')]",
+    "publicIPTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('publicIPNewOrExisting'), 'PublicIP.json')]",
     "sshKeyPath": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
     "linuxConfiguration_sshPublicKey": {
       "disablePasswordAuthentication": "true",
@@ -170,42 +171,61 @@
       }
     },
     {
-      "apiVersion": "2015-06-15",
-      "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[parameters('publicIPName')]",
-      "location": "[parameters('location')]",
+      "apiVersion": "2015-01-01",
+      "name": "vnetTemplate",
+      "type": "Microsoft.Resources/deployments",
       "properties": {
-        "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
-        "dnsSettings": {
-          "domainNameLabel": "[parameters('dnsNameForPublicIP')]"
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('vnetTemplateLink')]",
+          "contentVersion": "1.0.0.0"
+        },
+        "parameters": {
+          "location": {
+            "value": "[parameters('location')]"
+          },
+          "vnetName": {
+            "value": "[parameters('vnetName')]"
+          },
+          "vnetPrefix": {
+            "value": "[parameters('vnetPrefix')]"
+          },
+          "vnetSubnet1Name": {
+            "value": "[parameters('vnetSubnet1Name')]"
+          },
+          "vnetSubnet1Prefix": {
+            "value": "[parameters('vnetSubnet1Prefix')]"
+          },
+          "vnetSubnet2Name": {
+            "value": "[parameters('vnetSubnet2Name')]"
+          },
+          "vnetSubnet2Prefix": {
+            "value": "[parameters('vnetSubnet2Prefix')]"
+          }
         }
       }
     },
     {
-      "apiVersion": "2015-06-15",
-      "type": "Microsoft.Network/virtualNetworks",
-      "name": "[parameters('vnetName')]",
-      "location": "[parameters('location')]",
+      "apiVersion": "2015-01-01",
+      "name": "storageTemplate",
+      "type": "Microsoft.Resources/deployments",
       "properties": {
-        "addressSpace": {
-          "addressPrefixes": [
-            "[parameters('vnetPrefix')]"
-          ]
+        "mode": "Incremental",
+        "templateLink": {
+          "uri": "[variables('publicIPTemplateLink')]",
+          "contentVersion": "1.0.0.0"
         },
-        "subnets": [
-          {
-            "name": "[parameters('vnetSubnet1Name')]",
-            "properties": {
-              "addressPrefix": "[parameters('vnetSubnet1Prefix')]"
-            }
+        "parameters": {
+          "publicIPName": {
+            "value": "[parameters('publicIPName')]"
           },
-          {
-            "name": "[parameters('vnetSubnet2Name')]",
-            "properties": {
-              "addressPrefix": "[parameters('vnetSubnet2Prefix')]"
-            }
+          "dnsNameForPublicIP": {
+            "value": "[parameters('dnsNameForPublicIP')]"
+          },
+          "location": {
+            "value": "[parameters('location')]"
           }
-        ]
+        }
       }
     },
     {
