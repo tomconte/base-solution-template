@@ -234,8 +234,8 @@
       "name": "[variables('frontNICName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', parameters('publicIPName'))]",
-        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
+        "[concat('Microsoft.Resources/deployments/publicIPTemplate')]",
+        "[concat('Microsoft.Resources/deployments/vnetTemplate')]"
       ],
       "properties": {
         "ipConfigurations": [
@@ -260,7 +260,7 @@
       "name": "[variables('backNICName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
+        "[concat('Microsoft.Resources/deployments/vnetTemplate')]"
       ],
       "properties": {
         "ipConfigurations": [
