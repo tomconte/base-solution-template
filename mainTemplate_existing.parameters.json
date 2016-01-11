@@ -1,0 +1,60 @@
+{
+  "$schema": "http://schema.management.azure.com/schemas/2015-01-01/deploymentParameters.json#",
+  "contentVersion": "1.0.0.0",
+  "parameters": {
+    "adminUsername": {
+      "value": "azureuser"
+    },
+    "authenticationType": {
+      "value": "password"
+    },
+    "adminPassword": {
+      "value": "Pass123!"
+    },
+    "publicIPNewOrExisting": {
+      "value": "existing"
+    },
+    "publicIPName": {
+      "value": "existing-ip"
+    },
+    "dnsNameForPublicIP": {
+      "value": "qwzptlk"
+    },
+    "vnetNewOrExisting": {
+      "value": "existing"
+    },
+    "vnetName": {
+      "value": "existing-vnet"
+    },
+    "vnetSubnet1Name": {
+      "value": "subnet-1"
+    },
+    "vnetSubnet1Prefix": {
+      "value": "10.0.0.0/24"
+    },
+    "vnetSubnet2Name": {
+      "value": "subnet-2"
+    },
+    "vnetSubnet2Prefix": {
+      "value": "10.0.1.0/24"
+    },
+    "storageAccountNewOrExisting": {
+      "value": "existing"
+    },
+    "storageAccountName": {
+      "value": "tcoexistingstorage"
+    },
+    "storageAccountType": {
+      "value": "Standard_LRS"
+    },
+    "frontVMSize": {
+      "value": "Standard_A1"
+    },
+    "backVMSize": {
+      "value": "Standard_A1"
+    },
+    "location": {
+      "value": "northeurope"
+    }
+  }
+}
