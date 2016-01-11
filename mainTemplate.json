@@ -114,31 +114,23 @@
     }
   },
   "variables": {
-    "ubuntu_image_publisher": "Canonical",
-    "ubuntu_image_offer": "UbuntuServer",
-    "ubuntu_image_sku": "14.04.3-LTS",
-    "vnet_addr_prefix": "10.0.0.0/16",
-    "front_subnet_name": "Subnet-1",
-    "front_subnet_prefix": "10.0.0.0/24",
-    "sql_subnet_name": "Subnet-2",
-    "sql_subnet_prefix": "10.0.1.0/24",
-    "sql_private_ip": "10.0.1.4",
-    "publicIPAddressName": "myPublicIP",
+    "imagePublisher": "Canonical",
+    "imageOffer": "UbuntuServer",
+    "imageSKU": "14.04.3-LTS",
     "publicIPAddressType": "Dynamic",
     "vmStorageAccountContainerName": "vhds",
-    "virtualNetworkName": "vnet-solution",
-    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks',variables('virtualNetworkName'))]",
-    "front_subnet_ref": "[concat(variables('vnetID'),'/subnets/',variables('front_subnet_name'))]",
-    "sql_subnet_ref": "[concat(variables('vnetID'),'/subnets/',variables('sql_subnet_name'))]",
-    "front_osdisk_name": "front-osdisk",
-    "front_nic_name": "front-nic",
-    "front_vm_name": "front-vm",
-    "back_osdisk_name": "back-osdisk",
-    "back_nic_name": "back-nic",
-    "back_vm_name": "back-vm",
-    "fqdn": "[concat(parameters('dnsNameForPublicIP'),'.',parameters('location'),'.cloudapp.azure.com')]",
+    "vnetID": "[resourceId('Microsoft.Network/virtualNetworks', parameters('vnetName'))]",
+    "subnet1Ref": "[concat(variables('vnetID'),'/subnets/', parameters('vnetSubnet1Name'))]",
+    "subnet2Ref": "[concat(variables('vnetID'),'/subnets/', parameters('vnetSubnet2Name'))]",
+    "frontOSDiskName": "front-osdisk",
+    "frontNICName": "front-nic",
+    "frontVMName": "front-vm",
+    "backOSDiskName": "back-osdisk",
+    "backNICName": "back-nic",
+    "backVMName": "back-vm",
+    "FQDN": "[concat(parameters('dnsNameForPublicIP'), '.', parameters('location'), '.cloudapp.azure.com')]",
     "storageTemplateLink": "[concat(parameters('templateBaseUrl'), '/', parameters('storageAccountNewOrExisting'), 'StorageAccount.json')]",
-    "sshKeyPath": "[concat('/home/',parameters('adminUsername'),'/.ssh/authorized_keys')]",
+    "sshKeyPath": "[concat('/home/', parameters('adminUsername'), '/.ssh/authorized_keys')]",
     "linuxConfiguration_sshPublicKey": {
       "disablePasswordAuthentication": "true",
       "ssh": {
@@ -151,7 +143,7 @@
       }
     },
     "linuxConfiguration_password": {},
-    "linuxConfiguration": "[variables(concat('linuxConfiguration_',parameters('authenticationType')))]"
+    "linuxConfiguration": "[variables(concat('linuxConfiguration_', parameters('authenticationType')))]"
   },
   "resources": [
     {
@@ -180,7 +172,7 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/publicIPAddresses",
-      "name": "[variables('publicIPAddressName')]",
+      "name": "[parameters('publicIPName')]",
       "location": "[parameters('location')]",
       "properties": {
         "publicIPAllocationMethod": "[variables('publicIPAddressType')]",
@@ -192,25 +184,25 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/virtualNetworks",
-      "name": "[variables('virtualNetworkName')]",
+      "name": "[parameters('vnetName')]",
       "location": "[parameters('location')]",
       "properties": {
         "addressSpace": {
           "addressPrefixes": [
-            "[variables('vnet_addr_prefix')]"
+            "[parameters('vnetPrefix')]"
           ]
         },
         "subnets": [
           {
-            "name": "[variables('front_subnet_name')]",
+            "name": "[parameters('vnetSubnet1Name')]",
             "properties": {
-              "addressPrefix": "[variables('front_subnet_prefix')]"
+              "addressPrefix": "[parameters('vnetSubnet1Prefix')]"
             }
           },
           {
-            "name": "[variables('sql_subnet_name')]",
+            "name": "[parameters('vnetSubnet2Name')]",
             "properties": {
-              "addressPrefix": "[variables('sql_subnet_prefix')]"
+              "addressPrefix": "[parameters('vnetSubnet2Prefix')]"
             }
           }
         ]
@@ -219,23 +211,23 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('front_nic_name')]",
+      "name": "[variables('frontNICName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/publicIPAddresses/', variables('publicIPAddressName'))]",
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+        "[concat('Microsoft.Network/publicIPAddresses/', parameters('publicIPName'))]",
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
       ],
       "properties": {
         "ipConfigurations": [
           {
-            "name": "ipconfig1",
+            "name": "ip-config-front",
             "properties": {
               "privateIPAllocationMethod": "Dynamic",
               "publicIPAddress": {
-                "id": "[resourceId('Microsoft.Network/publicIPAddresses',variables('publicIPAddressName'))]"
+                "id": "[resourceId('Microsoft.Network/publicIPAddresses', parameters('publicIPName'))]"
               },
               "subnet": {
-                "id": "[variables('front_subnet_ref')]"
+                "id": "[variables('subnet1Ref')]"
               }
             }
           }
@@ -245,20 +237,19 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Network/networkInterfaces",
-      "name": "[variables('back_nic_name')]",
+      "name": "[variables('backNICName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
-        "[concat('Microsoft.Network/virtualNetworks/', variables('virtualNetworkName'))]"
+        "[concat('Microsoft.Network/virtualNetworks/', parameters('vnetName'))]"
       ],
       "properties": {
         "ipConfigurations": [
           {
-            "name": "ipconfig2",
+            "name": "ip-config-back",
             "properties": {
-              "privateIPAllocationMethod": "Static",
-              "privateIPAddress": "[variables('sql_private_ip')]",
+              "privateIPAllocationMethod": "Dynamic",
               "subnet": {
-                "id": "[variables('sql_subnet_ref')]"
+                "id": "[variables('subnet2Ref')]"
               }
             }
           }
@@ -268,33 +259,33 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('front_vm_name')]",
+      "name": "[variables('frontVMName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "Microsoft.Resources/deployments/storageTemplate",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('front_nic_name'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('frontNICName'))]"
       ],
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('frontVMSize')]"
         },
         "osProfile": {
-          "computerName": "[variables('front_vm_name')]",
+          "computerName": "[variables('frontVMName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "linuxConfiguration": "[variables('linuxConfiguration')]"
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[variables('ubuntu_image_publisher')]",
-            "offer": "[variables('ubuntu_image_offer')]",
-            "sku": "[variables('ubuntu_image_sku')]",
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSKU')]",
             "version": "latest"
           },
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('front_osdisk_name'),'.vhd')]"
+              "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('frontOSDiskName'), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -303,7 +294,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('front_nic_name'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('frontNICName'))]"
             }
           ]
         }
@@ -312,33 +303,33 @@
     {
       "apiVersion": "2015-06-15",
       "type": "Microsoft.Compute/virtualMachines",
-      "name": "[variables('back_vm_name')]",
+      "name": "[variables('backVMName')]",
       "location": "[parameters('location')]",
       "dependsOn": [
         "Microsoft.Resources/deployments/storageTemplate",
-        "[concat('Microsoft.Network/networkInterfaces/', variables('back_nic_name'))]"
+        "[concat('Microsoft.Network/networkInterfaces/', variables('backNICName'))]"
       ],
       "properties": {
         "hardwareProfile": {
           "vmSize": "[parameters('backVMSize')]"
         },
         "osProfile": {
-          "computerName": "[variables('back_vm_name')]",
+          "computerName": "[variables('backVMName')]",
           "adminUsername": "[parameters('adminUsername')]",
           "adminPassword": "[parameters('adminPassword')]",
           "linuxConfiguration": "[variables('linuxConfiguration')]"
         },
         "storageProfile": {
           "imageReference": {
-            "publisher": "[variables('ubuntu_image_publisher')]",
-            "offer": "[variables('ubuntu_image_offer')]",
-            "sku": "[variables('ubuntu_image_sku')]",
+            "publisher": "[variables('imagePublisher')]",
+            "offer": "[variables('imageOffer')]",
+            "sku": "[variables('imageSKU')]",
             "version": "latest"
           },
           "osDisk": {
             "name": "osdisk",
             "vhd": {
-              "uri": "[concat('http://',parameters('storageAccountName'),'.blob.core.windows.net/',variables('vmStorageAccountContainerName'),'/',variables('back_osdisk_name'),'.vhd')]"
+              "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('backOSDiskName'), '.vhd')]"
             },
             "caching": "ReadWrite",
             "createOption": "FromImage"
@@ -351,7 +342,7 @@
               "caching": "None",
               "createOption": "Empty",
               "vhd": {
-                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('back_vm_name'), '-dataDisk0', '.vhd')]"
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('backVMName'), '-dataDisk0', '.vhd')]"
               }
             },
             {
@@ -361,7 +352,7 @@
               "caching": "None",
               "createOption": "Empty",
               "vhd": {
-                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('back_vm_name'), '-dataDisk1', '.vhd')]"
+                "uri": "[concat('http://', parameters('storageAccountName'), '.blob.core.windows.net/', variables('vmStorageAccountContainerName'), '/', variables('backVMName'), '-dataDisk1', '.vhd')]"
               }
             }
           ]
@@ -369,7 +360,7 @@
         "networkProfile": {
           "networkInterfaces": [
             {
-              "id": "[resourceId('Microsoft.Network/networkInterfaces',variables('back_nic_name'))]"
+              "id": "[resourceId('Microsoft.Network/networkInterfaces', variables('backNICName'))]"
             }
           ]
         }
@@ -378,7 +369,7 @@
   ],
   "outputs": {
     "fullyQualifiedDomainName": {
-      "value": "[variables('fqdn')]",
+      "value": "[variables('FQDN')]",
       "type": "string" 
     }
   }
