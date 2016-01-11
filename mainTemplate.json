@@ -70,7 +70,8 @@
       "type": "string"
     },
     "vnetPrefix": {
-      "type": "string"
+      "type": "string",
+      "defaultValue": ""
     },
     "vnetSubnet1Name": {
       "type": "string"
